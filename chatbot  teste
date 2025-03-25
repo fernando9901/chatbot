@@ -1,0 +1,97 @@
+import nltk
+from nltk.tokenize import word_tokenize
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+# Baixe os recursos necessários do nltk
+nltk.download('punkt')
+
+# Dados de perguntas e respostas
+dados = [
+    {"pergunta": "Como está o clima hoje?", "resposta": "O clima hoje está ensolarado."},
+    {"pergunta": "Vai chover amanhã?", "resposta": "Sim, há previsão de chuva para amanhã."},
+    {"pergunta": "Qual a temperatura agora?", "resposta": "A temperatura atual é de 25°C."},
+    {"pergunta": "Está ventando?", "resposta": "Sim, há ventos moderados."},
+]
+
+# Tokenização e criação de vocabulário
+palavras = []
+for dado in dados:
+    palavras.extend(word_tokenize(dado["pergunta"].lower()))
+
+# Remover duplicatas e criar um vocabulário
+vocabulario = sorted(set(palavras))
+
+# Função para converter texto em vetor
+def texto_para_vetor(texto, vocabulario):
+    vetor = np.zeros(len(vocabulario))  # Cria um vetor de zeros com o tamanho do vocabulário
+    for palavra in word_tokenize(texto.lower()):  # Tokeniza o texto e itera sobre cada palavra
+        if palavra in vocabulario:  # Verifica se a palavra está no vocabulário
+            vetor[vocabulario.index(palavra)] += 1  # Incrementa a posição correspondente no vetor
+    return vetor  # Retorna o vetor resultante
+
+# Preparar dados de treino
+X_train = np.array([texto_para_vetor(dado["pergunta"], vocabulario) for dado in dados])
+y_train = np.array([dados.index(dado) for dado in dados])  # Índices das respostas
+
+# Exibir resultados
+print("Vocabulário:", vocabulario)
+print("X_train:", X_train)
+print("y_train:", y_train)
+
+# Criar o modelo
+modelo = Sequential([
+    Dense(16, input_shape=(len(vocabulario),), activation='relu'),
+    Dense(len(dados), activation='softmax')
+])
+
+modelo.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# Treinar o modelo
+modelo.fit(X_train, y_train, epochs=100, verbose=1)
+
+# Função para responder às perguntas
+def responder(pergunta):
+    if not pergunta.strip():
+        return "Por favor, faça uma pergunta."
+    vetor = texto_para_vetor(pergunta, vocabulario)
+    predicao = modelo.predict(np.array([vetor]))
+    resposta_idx = np.argmax(predicao)
+    return dados[resposta_idx]["resposta"]
+
+# Teste da função responder
+print(responder("Como está o clima hoje?"))
+# Saída esperada: "O clima hoje está ensolarado."
+
+# Loop de interação com o usuário
+while True:
+    pergunta = input("Você: ")
+    if pergunta.lower() == "sair":
+        break
+    resposta = responder(pergunta)
+    print(f"Chatbot: {resposta}")
+
+# Configurações de API (868ddf9fb75c434abcf0827384f997d4)
+OPENWEATHER_API_KEY = "sua_chave_openweather"
+NEWS_API_KEY = "sua_chave_newsapi"
+
+# Ou melhor ainda, use variáveis de ambiente
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # Carrega do arquivo .env
+
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
+NEWS_API_KEY = os.getenv("NEWS_API_KEY")
+
+from textblob import TextBlob
+
+# Teste TextBlob
+texto = TextBlob("Eu amo programar chatbots!")
+print(f"Sentimento: {texto.sentiment}")
+
+# Teste requests (sem chave)
+import requests
+response = requests.get("https://newsapi.org/v2/sources?apiKey=TESTE")
+print(f"Status NewsAPI: {response.status_code}")
