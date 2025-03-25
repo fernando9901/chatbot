@@ -1,0 +1,3 @@
+OPENWEATHER_API_KEY=868ddf9fb75c434abcf0827384f997d4
+NEWS_API_KEY=868ddf9fb75c434abcf0827384f997d4
+from textblob import TextBlob
